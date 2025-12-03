@@ -1,43 +1,30 @@
-const express = require("express"); // Web framework
-const cors = require("cors"); // CORS management
-const { Pool } = require("pg"); // PostgreSQL client
+const express = require("express");
+const cors = require("cors");
+const { Pool } = require("pg");
 const app = express();
-const PORT = process.env.PORT || 3000; // Configurable port
+const PORT = process.env.PORT || 3000;
 
-// Database connection configuration
+// Database connection
 const pool = new Pool({
-  host: process.env.DB_HOST || "db",
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER || "admin",
-  password: process.env.DB_PASSWORD || "secret",
-  database: process.env.DB_NAME || "mydb",
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
-// MIDDLEWARE CORS: Allows cross-origin requests
-app.use(
-  cors({
-    origin: [
-      "http://localhost:8080", // Frontend via host port
-      "http://127.0.0.1:8080", // Alternative localhost
-      "http://localhost:*", // All localhost ports (DEV ONLY)
-      "http://backend", // Docker service name (internal tests)
-    ],
-    methods: ["GET", "POST", "OPTIONS"], // Allowed HTTP methods
-    allowedHeaders: ["Content-Type"], // Allowed headers
-  })
-);
+// Middleware
+app.use(cors());
 
-// MAIN API ROUTE
+// Main API route
 app.get("/api", (req, res) => {
   res.json({
     message: "Hello from Backend!",
     timestamp: new Date().toISOString(),
-    client: req.get("Origin") || "unknown",
     success: true,
   });
 });
 
-// DATABASE ROUTE: Retrieve data from the database
+// Database route
 app.get("/db", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM users");
@@ -56,10 +43,12 @@ app.get("/db", async (req, res) => {
   }
 });
 
-// START SERVER
-app.listen(PORT, () => {
-  console.log(`Backend listening on port ${PORT}`);
-  console.log(`API endpoint: http://localhost:${PORT}/api`);
-  console.log(`DB endpoint: http://localhost:${PORT}/db`);
+// Optional root route
+app.get("/", (req, res) => {
+  res.send("Backend is live! 🎉");
 });
 
+// Start server
+app.listen(PORT, () => {
+  console.log(`Backend listening on port ${PORT}`);
+});
